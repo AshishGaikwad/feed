@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Text, View} from 'react-native';
+import {Text, View,NativeModules} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../../screens/HomeScreen';
@@ -11,7 +11,12 @@ import {
   faUser,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons';
+
+import RecorderView   from './RecorderExample';
 function SettingsScreen() {
+ 
+
+
   return (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
       <Text>Settings!</Text>
@@ -63,10 +68,19 @@ export default function App() {
           options={{
             tabBarLabel: 'Upload',
             tabBarIcon: ({color, size}) => (
-              <FontAwesomeIcon icon={faPlus} size={24} color={color}/>
+               <FontAwesomeIcon icon={faPlus} size={24} color={color}/>
             ),
+            
             headerShown: false,
+            
           }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              RecorderView.NavigateMe();
+            },
+          }}
+          
         />
         <Tab.Screen
           name="Inbox"

@@ -60,10 +60,10 @@ function HomeScreen() {
   });
 
   useEffect(() => {
-    fetch('http://192.168.0.106:8080/post/')
+    fetch('http://192.168.0.105:8080/post/')
       .then(response => response.json())
       .then(json => setPosts(json))
-      .catch(error => console.error(error));
+      .catch(error => console.error("Error",error));
   }, []);
 
   const onPageLayout = event => {
