@@ -1,8 +1,10 @@
 import * as React from 'react';
-import {Text, View,NativeModules} from 'react-native';
+import {AsyncStorage} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import HomeScreen from '../../screens/HomeScreen';
+import UserProfile from '../../screens/UserProfile';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {
   faHome,
@@ -12,99 +14,144 @@ import {
   faPlus,
 } from '@fortawesome/free-solid-svg-icons';
 
-import RecorderView   from './RecorderExample';
-function SettingsScreen() {
- 
-
-
-  return (
-    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-      <Text>Settings!</Text>
-    </View>
-  );
-}
+import Auth from '../../screens/Auth';
+import PhoneScreen from '../../screens/Auth/PhoneScreen';
+import OtpScreen from '../../screens/Auth/OtpScreen';
+import RecorderView from './RecorderExample';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarShowLabel: false,
-          tabBarActiveTintColor: 'rgb(255, 77, 77)',
-          tabBarInactiveTintColor: 'rgba(255,255,255,1)',
-          tabBarStyle: {
-            position: 'absolute',
-            height: 50,
-            backgroundColor:'rgba(0,0,0,0.9)',
-          },
-        }}>
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarLabel: 'Home',
-            tabBarIcon: ({focused, color, size}) => (
-              <FontAwesomeIcon icon={faHome} size={24} color={color} />
-            ),
-            headerShown: false,
-          }}
+      <Stack.Navigator initialRouteName="Landing">
+        <Stack.Screen
+          name="TabNavigator"
+          component={TabNavigator}
+          options={{headerShown: false}}
         />
-        <Tab.Screen
-          name="Discover"
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: 'Discover',
-            tabBarIcon: ({color, size}) => (
-              <FontAwesomeIcon icon={faSearch} size={24} color={color}/>
-            ),
-            headerShown: false,
-          }}
+
+        <Stack.Screen
+          name="Auth"
+          component={Auth}
+          options={{headerShown: false}}
         />
-        <Tab.Screen
-          name="Upload"
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: 'Upload',
-            tabBarIcon: ({color, size}) => (
-               <FontAwesomeIcon icon={faPlus} size={24} color={color}/>
-            ),
-            
-            headerShown: false,
-            
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              RecorderView.NavigateMe();
-            },
-          }}
-          
+
+        <Stack.Screen
+          name="PhoneScreen"
+          component={PhoneScreen}
+          options={{headerShown: false}}
         />
-        <Tab.Screen
-          name="Inbox"
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: 'Inbox',
-            tabBarIcon: ({color, size}) => (
-              <FontAwesomeIcon icon={faInbox} size={24} color={color}/>
-            ),
-            headerShown: false,
-          }}
+
+        <Stack.Screen
+          name="OtpScreen"
+          component={OtpScreen}
+          options={{headerShown: false}}
         />
-        <Tab.Screen
-          name="Me"
-          component={SettingsScreen}
-          options={{
-            tabBarLabel: 'Me',
-            tabBarIcon: ({color, size}) => (
-              <FontAwesomeIcon icon={faUser} size={24} color={color}/>
-            ),
-            headerShown: false,
-          }}
-        />
-      </Tab.Navigator>
+      </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+function TabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: 'rgb(255, 77, 77)',
+        tabBarInactiveTintColor: 'rgba(255,255,255,1)',
+        tabBarStyle: {
+          position: 'absolute',
+          height: 50,
+          backgroundColor: 'rgba(0,0,0,0.9)',
+        },
+      }}>
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({focused, color, size}) => (
+            <FontAwesomeIcon icon={faHome} size={24} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
+      <Tab.Screen
+        name="Discover"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Discover',
+          tabBarIcon: ({color, size}) => (
+            <FontAwesomeIcon icon={faSearch} size={24} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
+      <Tab.Screen
+        name="Upload"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Upload',
+          tabBarIcon: ({color, size}) => (
+            <FontAwesomeIcon icon={faPlus} size={24} color={color} />
+          ),
+
+          headerShown: false,
+        }}
+        listeners={({navigation, routes}) => ({
+          tabPress: e => {
+            e.preventDefault();
+
+            AsyncStorage.getItem('IsLoggedIn').then(data => {
+              if (data != null && data =="Y") RecorderView.NavigateMe();
+              else navigation.navigate('PhoneScreen');
+            });
+          },
+        })}
+      />
+      <Tab.Screen
+        name="Inbox"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Inbox',
+          tabBarIcon: ({color, size}) => (
+            <FontAwesomeIcon icon={faInbox} size={24} color={color} />
+          ),
+          headerShown: false,
+        }}
+        listeners={({navigation, route}) => ({
+          tabPress: e => {
+            e.preventDefault();
+           // navigation.navigate(isValidSession() ? 'UserProfile' : 'Inbox');
+            AsyncStorage.getItem('IsLoggedIn').then(data => {
+              if (data != null && data=="Y") navigation.navigate('Inbox')
+              else navigation.navigate('PhoneScreen');
+            });
+          },
+        })}
+      />
+      <Tab.Screen
+        name="UserProfile"
+        component={UserProfile}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({color, size}) => (
+            <FontAwesomeIcon icon={faUser} size={24} color={color} />
+          ),
+          headerShown: false,
+        }}
+        listeners={({navigation, route}) => ({
+          tabPress: e => {
+            e.preventDefault();
+            AsyncStorage.getItem('IsLoggedIn').then(data => {
+              if (data != null && data == "Y") navigation.navigate('UserProfile')
+              else navigation.navigate('PhoneScreen');
+            });
+          },
+        })}
+      />
+    </Tab.Navigator>
   );
 }

@@ -11,48 +11,54 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.content.res.AssetFileDescriptor;
+import android.media.MediaPlayer;
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.media.Image;
-import android.media.MediaScannerConnection;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.os.Environment;
-import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Size;
+import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.feed.R;
-import com.feed.editor.util.RecordingState;
+import com.feed.util.Constants;
+import com.feed.util.Filters;
 import com.feed.view.ProgressBarListener;
 import com.feed.view.RecorderView;
 import com.feed.view.SegmentedProgressBar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
+import VideoHandle.EpEditor;
+import VideoHandle.EpVideo;
+import VideoHandle.OnEditorListener;
 import ai.deepar.ar.ARErrorType;
 import ai.deepar.ar.AREventListener;
 import ai.deepar.ar.CameraResolutionPreset;
@@ -92,11 +98,92 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     private int height = 0;
 
     private File videoFileName;
+    private RecorderView recorder;
+    private SegmentedProgressBar video_progress;
+
+    private long recordTimeInMillis = 30*1000;
+
+    int sec_passed = 0;
+    long time_in_milis = 0;
+    private String currentSession = ""+System.currentTimeMillis();
+    private List<File> clipList = new ArrayList<>();
+    FloatingActionButton OpenBottomSheet ;
+    MediaPlayer music;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recorder);
+        currentSession = ""+System.currentTimeMillis();
+        clipList = new ArrayList<>();
+        ArrayAdapter adapter = new ArrayAdapter<String>(this, R.layout.activity_listview, Filters.getAllFilters());
+        File sessionDraftPath = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession);
+        if(!sessionDraftPath.exists()) {
+            sessionDraftPath.mkdirs();
+        }
+
+        recorder = findViewById(R.id.recorder);
+        OpenBottomSheet = findViewById(R.id.bottom_sheet_button);
+        recorder.invalidate();
+        initProgressBar();
+        AssetFileDescriptor descriptor = null;
+        music = new MediaPlayer();
+        try {
+            descriptor = getAssets().openFd("MeetSong.mp3");
+            music.setDataSource(descriptor.getFileDescriptor(), descriptor.getStartOffset(), descriptor.getLength());
+            descriptor.close();
+            music.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        music.setVolume(1f, 1f);
+        music.setLooping(false);
+
+
+        recorder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(recording) {
+                   pause();
+                } else {
+                    resume();
+                }
+                recording = !recording;
+
+
+            }
+        });
+
+        OpenBottomSheet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(
+                        RecorderActivity.this, R.style.Theme);
+                View bottomSheetView = LayoutInflater.from(getApplicationContext())
+                        .inflate(R.layout.modal_bottom_sheet,
+                                (LinearLayout)findViewById(R.id.modalBottomSheetContainer));
+                ListView listView = bottomSheetView.findViewById(R.id.filtersList);
+                listView.setAdapter(adapter);
+
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        TextView lbl =  view.findViewById(R.id.label);
+                        deepAR.switchEffect("filter", getFilterPath(lbl.getText().toString()));
+                        bottomSheetDialog.dismiss();
+                    }
+                });
+
+                bottomSheetDialog.setContentView(bottomSheetView);
+                bottomSheetDialog.show();
+            }
+
+
+        });
+
+
     }
 
     @Override
@@ -157,7 +244,6 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         masks.add("grumpycat");
         masks.add("Helmet_PBR_V1");
         masks.add("frankenstein");
-        masks.add("hair_segmentation");
         masks.add("manly_face");
         masks.add("plastic_ocean");
         masks.add("pumpkin");
@@ -199,6 +285,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
 
         arView.getHolder().addCallback(this);
 
+
         // Surface might already be initialized, so we force the call to onSurfaceChanged
         arView.setVisibility(View.GONE);
         arView.setVisibility(View.VISIBLE);
@@ -230,77 +317,6 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
             }
         });
 
-//        ImageButton openActivity = findViewById(R.id.openActivity);
-//        openActivity.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent myIntent = new Intent(MainActivity.this, BasicActivity.class);
-//                MainActivity.this.startActivity(myIntent);
-//            }
-//
-//
-//        });
-
-
-
-        final TextView screenShotModeButton = findViewById(R.id.screenshotModeButton);
-        final TextView recordModeBtn = findViewById(R.id.recordModeButton);
-
-        recordModeBtn.getBackground().setAlpha(0x00);
-        screenShotModeButton.getBackground().setAlpha(0xA0);
-
-        screenShotModeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(currentSwitchRecording) {
-                    if(recording) {
-                        Toast.makeText(getApplicationContext(), "Cannot switch to screenshots while recording!", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    recordModeBtn.getBackground().setAlpha(0x00);
-                    screenShotModeButton.getBackground().setAlpha(0xA0);
-                    screenshotBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            deepAR.takeScreenshot();
-                        }
-                    });
-
-                    currentSwitchRecording = !currentSwitchRecording;
-                }
-            }
-        });
-
-
-
-        recordModeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if(!currentSwitchRecording) {
-
-                    recordModeBtn.getBackground().setAlpha(0xA0);
-                    screenShotModeButton.getBackground().setAlpha(0x00);
-                    screenshotBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            if(recording) {
-                                deepAR.stopVideoRecording();
-                                Toast.makeText(getApplicationContext(), "Recording " + videoFileName.getName() + " saved.", Toast.LENGTH_LONG).show();
-                            } else {
-                                videoFileName = new File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "video_" + new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(new Date()) + ".mp4");
-                                deepAR.startVideoRecording(videoFileName.toString(), width/2, height/2);
-                                Toast.makeText(getApplicationContext(), "Recording started.", Toast.LENGTH_SHORT).show();
-                            }
-                            recording = !recording;
-                        }
-                    });
-
-                    currentSwitchRecording = !currentSwitchRecording;
-                }
-            }
-        });
 
         previousMask.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -600,19 +616,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
 
     @Override
     public void screenshotTaken(Bitmap bitmap) {
-        CharSequence now = DateFormat.format("yyyy_MM_dd_hh_mm_ss", new Date());
-        try {
-            File imageFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "image_" + now + ".jpg");
-            FileOutputStream outputStream = new FileOutputStream(imageFile);
-            int quality = 100;
-            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
-            outputStream.flush();
-            outputStream.close();
-            MediaScannerConnection.scanFile(RecorderActivity.this, new String[]{imageFile.toString()}, null, null);
-            Toast.makeText(RecorderActivity.this, "Screenshot " + imageFile.getName() + " saved.", Toast.LENGTH_SHORT).show();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+
 
     }
 
@@ -674,4 +678,141 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     public void effectSwitched(String s) {
 
     }
+
+
+    private void pause() {
+        deepAR.stopVideoRecording();
+        Toast.makeText(getApplicationContext(), "Recording " + videoFileName.getName() + " saved.", Toast.LENGTH_LONG).show();
+        recorder.pause();
+        video_progress.pause();
+        video_progress.addDivider();
+        music.pause();
+    }
+
+    private void resume() {
+        videoFileName = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+Constants.CLIP+(clipList.size()+1));
+        clipList.add(videoFileName);
+        deepAR.startVideoRecording(videoFileName.toString(), width/2, height/2);
+        Toast.makeText(getApplicationContext(), "Recording started.", Toast.LENGTH_SHORT).show();
+        recorder.start();
+        video_progress.resume();
+        music.start();
+    }
+
+    private void preview() {
+        pause();
+
+        ProgressDialog dialog = ProgressDialog.show(RecorderActivity.this, "",
+                "Loading. Please wait...", true);
+
+        dialog.show();
+        CameraResolutionPreset cameraResolutionPreset = CameraResolutionPreset.P1920x1080;
+        ArrayList<EpVideo> epVideos =  new  ArrayList<>();
+       // EpDraw epDraw = new EpDraw("file:///android_asset/app_logo.png",10,10,50,50,false);
+
+        for(File file : clipList){
+            EpVideo epVideo =new EpVideo (file.getAbsolutePath());
+           // epVideo.addDraw(epDraw);
+            epVideos.add(epVideo);
+        }
+
+
+
+        String finalVideo = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build.mp4").getAbsolutePath();
+//        EpEditor.OutputOption outputOption =new EpEditor.OutputOption(finalVideo);
+//        outputOption.setWidth(cameraResolutionPreset.getHeight());
+//        outputOption.setHeight(cameraResolutionPreset.getWidth());
+//        outputOption.frameRate = 25 ;
+//        outputOption.bitRate = 10 ; //Default
+
+        EpEditor.mergeByLc(this,epVideos, new EpEditor.OutputOption(finalVideo), new OnEditorListener() {
+            @Override
+            public void onSuccess() {
+                Intent previewIntent = new Intent(RecorderActivity.this, PreviewActivity.class);
+                previewIntent.putExtra("videoPath",Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build.mp4");
+                startActivity(previewIntent);
+                System.out.println("Video merged succesfully");
+                //EpEditor.music(videoPath, audioPath, outfilePath, 1, 0.7, new OnEditorListener());
+
+
+                dialog.dismiss();
+            }
+
+            @Override
+            public void onFailure() {
+                System.out.println("Video merged failed");
+                dialog.dismiss();
+            }
+
+            @Override
+            public void onProgress(float progress) {
+                System.out.println("Video merged progress");
+                dialog.dismiss();
+            }
+        });
+//        EpEditor.mergeByLc(epVideos,outputOption, new  OnEditorListener() {
+//            @Override
+//            public  void  onSuccess () {
+//                Intent previewIntent = new Intent(RecorderActivity.this, PreviewActivity.class);
+//                previewIntent.putExtra("videoPath",finalVideo);
+//                startActivity(previewIntent);
+//                System.out.println("Video merged succesfully");
+//                //EpEditor.music(videoPath, audioPath, outfilePath, 1, 0.7, new OnEditorListener());
+//
+//
+//                dialog.dismiss();
+//            }
+//
+//            @Override
+//            public  void  onFailure () {
+//                System.out.println("Video merged failed");
+//                dialog.dismiss();
+//            }
+//
+//            @Override
+//            public  void  onProgress ( float  progress ) {
+//                System.out.println("Video merged in progress");
+//            }
+//        });
+
+
+
+
+
+
+
+    }
+
+    public void initProgressBar() {
+        sec_passed = 0;
+        video_progress = findViewById(R.id.video_progress);
+        video_progress.enableAutoProgressView(recordTimeInMillis);
+        video_progress.setDividerColor(Color.WHITE);
+        video_progress.setDividerEnabled(true);
+        video_progress.setDividerWidth(4);
+        video_progress.setShader(new int[]{Color.rgb(255, 0, 0), Color.rgb(255, 0, 0), Color.rgb(255, 0, 0)});
+
+        video_progress.setListener(new ProgressBarListener() {
+            @Override
+            public void TimeinMill(long mills) {
+                time_in_milis = mills;
+                sec_passed = (int) (mills / 1000);
+
+                if (sec_passed > (recordTimeInMillis / 1000) - 1) {
+
+                    preview();
+                }
+
+//                if (is_recording_timer_enable && sec_passed >= recording_time) {
+//                    is_recording_timer_enable = false;
+//                    start_or_Stop_Recording();
+//                }
+
+            }
+        });
+    }
+
+
+
+
 }

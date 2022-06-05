@@ -1,25 +1,7 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {FlatList, View, Text} from 'react-native';
 import Post from '../../components/Post';
-// import * as Progress from 'react-native-progress';
-// const posts = [
-//   {
-//     id:"001",
-//     uri: 'http://resumeonweb.esy.es/videos/1.mp4',
-//   },
-//   {
-//     id:"002",
-//     uri: 'http://resumeonweb.esy.es/videos/2.mp4',
-//   },
-//   {
-//     id:"003",
-//     uri: 'http://resumeonweb.esy.es/videos/3.mp4',
-//   },
-//   {
-//     id:"004",
-//     uri: 'http://resumeonweb.esy.es/videos/4.mp4',
-//   },
-// ];
+
 
 function HomeScreen() {
   const [height, setHeight] = useState(0);
