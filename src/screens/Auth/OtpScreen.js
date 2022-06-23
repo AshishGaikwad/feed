@@ -21,13 +21,11 @@ export default function OTPScreen({ route, navigation }) {
         console.log("token",token)
         const userData = await getUserDetails(otp.mobile,token);
 
-        if(userData.status ){
+
+        if(userData.status){
 
           if(userData.body == null && userData.responseCode == 201){
-
-            
-            
-
+                navigation.navigate('SaveProfileScreen',{mobileNo:otp.mobile,token:token});
           }else{
             AsyncStorage.setItem('SessionToken', token) ;
             AsyncStorage.setItem('UserDetails', JSON.stringify(userData.body) );
@@ -38,6 +36,8 @@ export default function OTPScreen({ route, navigation }) {
 
           }
           
+        }else{
+
         }
 
 

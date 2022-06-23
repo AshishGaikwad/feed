@@ -56,3 +56,36 @@ export  async function verifyOTP(pOTP,pRefNo,pMobile) {
     console.log("users ", data);
     return data;
   }
+
+  export  async function checkUsernameIfExist(pUsername,pToken) {
+    var URL = config.BaseURL + config.UsernameAvailibility;
+    URL = URL.replace("{pUsername}",pUsername);
+    const response = await fetch(URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':'Bearer '+pToken
+      },
+    })
+    const data = await response.json();
+    //console.log("users ", data);
+    return data;
+  }
+
+  export  async function saveUserDetails(pUserDetails,pToken) {
+console.log("pUserDetails",pUserDetails)
+
+    var URL = config.BaseURL + config.SaveUserDetails;
+    
+    const response = await fetch(URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':'Bearer '+pToken
+      },
+      body:JSON.stringify(pUserDetails)
+    })
+    const data = await response.json();
+    //console.log("users ", data); 
+    return data;
+  }

@@ -18,6 +18,7 @@ import Auth from '../../screens/Auth';
 import PhoneScreen from '../../screens/Auth/PhoneScreen';
 import OtpScreen from '../../screens/Auth/OtpScreen';
 import RecorderView from './RecorderExample';
+import SaveProfileScreen from '../../screens/UserProfile/SaveProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -33,12 +34,6 @@ export default function App() {
         />
 
         <Stack.Screen
-          name="Auth"
-          component={Auth}
-          options={{headerShown: false}}
-        />
-
-        <Stack.Screen
           name="PhoneScreen"
           component={PhoneScreen}
           options={{headerShown: false}}
@@ -47,6 +42,12 @@ export default function App() {
         <Stack.Screen
           name="OtpScreen"
           component={OtpScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name="SaveProfileScreen"
+          component={SaveProfileScreen}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

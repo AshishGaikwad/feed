@@ -38,6 +38,7 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.feed.FilterSheetFragment;
 import com.feed.R;
 import com.feed.util.Constants;
 import com.feed.util.Filters;
@@ -159,26 +160,16 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         OpenBottomSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(
-                        RecorderActivity.this, R.style.Theme);
-                View bottomSheetView = LayoutInflater.from(getApplicationContext())
-                        .inflate(R.layout.modal_bottom_sheet,
-                                (LinearLayout)findViewById(R.id.modalBottomSheetContainer));
-                ListView listView = bottomSheetView.findViewById(R.id.filtersList);
-                listView.setAdapter(adapter);
+                FilterSheetFragment filterSheetFragment = new FilterSheetFragment(deepAR);
 
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        TextView lbl =  view.findViewById(R.id.label);
-                        deepAR.switchEffect("filter", getFilterPath(lbl.getText().toString()));
-                        bottomSheetDialog.dismiss();
-                    }
-                });
 
-                bottomSheetDialog.setContentView(bottomSheetView);
-                bottomSheetDialog.show();
+//                        TextView lbl =  view.findViewById(R.id.label);
+//                        deepAR.switchEffect("filter", getFilterPath(lbl.getText().toString()));
+//                        filterSheetFragment.dismiss();
+
+                filterSheetFragment.show(getSupportFragmentManager(),filterSheetFragment.getTag());
             }
+
 
 
         });
