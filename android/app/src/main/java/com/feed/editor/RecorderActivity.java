@@ -32,6 +32,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RadioButton;
@@ -108,7 +109,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     long time_in_milis = 0;
     private String currentSession = ""+System.currentTimeMillis();
     private List<File> clipList = new ArrayList<>();
-    FloatingActionButton OpenBottomSheet ;
+    private ImageView OpenBottomSheet ;
     MediaPlayer music;
 
 

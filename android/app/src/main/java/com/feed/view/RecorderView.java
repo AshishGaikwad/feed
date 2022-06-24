@@ -12,7 +12,7 @@ import androidx.annotation.Nullable;
 
 public class RecorderView  extends View {
     float radius = 100f;
-    int rectSize = 35;
+    int rectSize = 15;
     int outerCircleStorkeWidth = 5;
 
     boolean isShowInnerCircle = true;

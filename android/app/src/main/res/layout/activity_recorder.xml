@@ -23,25 +23,26 @@
         android:scaleType="centerInside"
         android:src="@drawable/camera_white" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/bottom_sheet_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="40dp"
-        android:layout_marginEnd="40dp"
-        android:layout_marginBottom="40dp"
-        android:src="@drawable/screenshot_btn"
-        app:backgroundTint="@color/design_default_color_secondary"
-        app:elevation="12dp" />
+<!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+<!--        android:id="@+id/bottom_sheet_button"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentEnd="true"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="40dp"-->
+<!--        android:layout_marginTop="40dp"-->
+<!--        android:layout_marginEnd="40dp"-->
+<!--        android:layout_marginBottom="40dp"-->
+<!--        android:src="@drawable/feed_filter_icon"-->
+<!--        app:backgroundTint="@color/design_default_color_secondary"-->
+<!--        app:elevation="12dp" />-->
+
+
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="20dp"
         android:layout_margin="5dp">
-
 
 
         <com.feed.view.SegmentedProgressBar
@@ -243,13 +244,50 @@
 
     </RelativeLayout>
 
-    <com.feed.view.RecorderView
-        android:id="@+id/recorder"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        >
+        android:orientation="vertical">
 
-    </com.feed.view.RecorderView>
+        <ImageView
+            android:id="@+id/bottom_sheet_button"
+            android:layout_width="40sp"
+            android:layout_height="40sp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="center"
+            android:src="@drawable/feed_filter_icon"
+            app:elevation="12dp" />
+
+        <com.feed.view.RecorderView
+            android:id="@+id/recorder"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_gravity="center"></com.feed.view.RecorderView>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="30dp"
+        android:layout_marginEnd="30dp"
+
+        android:layout_marginBottom="30dp"
+        android:background="#808080"
+        android:bottomLeftRadius="10dp"
+        android:bottomRightRadius="10dp"
+        android:text="Preview"
+        android:textColor="#ffffff"
+        android:topLeftRadius="10dp"
+        android:topRightRadius="10dp" />
+
+
 </RelativeLayout>
