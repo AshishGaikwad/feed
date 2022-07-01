@@ -22,6 +22,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.media.Image;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -39,8 +41,17 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.feed.FilterSheetFragment;
 import com.feed.R;
+import com.feed.entity.FilterEntityParser;
 import com.feed.util.Constants;
 import com.feed.util.Filters;
 import com.feed.view.ProgressBarListener;
@@ -50,13 +61,20 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 
+
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import VideoHandle.EpEditor;
 import VideoHandle.EpVideo;
@@ -70,6 +88,8 @@ import ai.deepar.deepar_example.ARSurfaceProvider;
 
 public class RecorderActivity extends AppCompatActivity implements SurfaceHolder.Callback, AREventListener {
 
+    private RecorderActivity me = this;
+    FilterSheetFragment filterSheetFragment ;
     // Default camera lens value, change to CameraSelector.LENS_FACING_BACK to initialize with back camera
     private int defaultLensFacing = CameraSelector.LENS_FACING_FRONT;
     private ARSurfaceProvider surfaceProvider = null;
@@ -81,6 +101,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     private static final boolean useExternalCameraTexture = true;
 
     private DeepAR deepAR;
+    private TextView currentFilterName;
 
     private int currentMask=0;
     private int currentEffect=0;
@@ -124,7 +145,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         if(!sessionDraftPath.exists()) {
             sessionDraftPath.mkdirs();
         }
-
+        currentFilterName = findViewById(R.id.current_filter_name);
         recorder = findViewById(R.id.recorder);
         OpenBottomSheet = findViewById(R.id.bottom_sheet_button);
         recorder.invalidate();
@@ -161,18 +182,9 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         OpenBottomSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FilterSheetFragment filterSheetFragment = new FilterSheetFragment(deepAR);
-
-
-//                        TextView lbl =  view.findViewById(R.id.label);
-//                        deepAR.switchEffect("filter", getFilterPath(lbl.getText().toString()));
-//                        filterSheetFragment.dismiss();
-
+                filterSheetFragment = new FilterSheetFragment(me);
                 filterSheetFragment.show(getSupportFragmentManager(),filterSheetFragment.getTag());
             }
-
-
-
         });
 
 
@@ -184,7 +196,7 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
                 ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{ Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO },
+             ActivityCompat.requestPermissions(this, new String[]{ Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO },
                     1);
         } else {
             // Permission has already been granted
@@ -208,70 +220,66 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
 
     private void initialize() {
         initializeDeepAR();
-        initializeFilters();
+//        initializeFilters();
         initalizeViews();
     }
 
-    private void initializeFilters() {
-        masks = new ArrayList<>();
-        masks.add("none");
-        masks.add("aviators");
-        masks.add("flower_crown");
-        masks.add("bigmouth");
-        masks.add("dalmatian");
-        masks.add("flowers");
-        masks.add("koala");
-        masks.add("lion");
-        masks.add("smallface");
-        masks.add("teddycigar");
-        masks.add("background_segmentation");
-        masks.add("tripleface");
-        masks.add("sleepingmask");
-        masks.add("fatify");
-        masks.add("obama");
-        masks.add("mudmask");
-        masks.add("pug");
-        masks.add("slash");
-        masks.add("twistedface");
-        masks.add("grumpycat");
-        masks.add("Helmet_PBR_V1");
-        masks.add("frankenstein");
-        masks.add("manly_face");
-        masks.add("plastic_ocean");
-        masks.add("pumpkin");
-        masks.add("scuba");
-
-        masks.add("tape_face");
-        masks.add("tiny_sunglasses");
-
-
-
-        effects = new ArrayList<>();
-        effects.add("none");
-        effects.add("fire");
-        effects.add("rain");
-        effects.add("heart");
-        effects.add("blizzard");
-        effects.add("fairy_lights");
-        effects.add("beauty");
-
-        filters = new ArrayList<>();
-        filters.add("none");
-        filters.add("filmcolorperfection");
-        filters.add("tv80");
-        filters.add("drawingmanga");
-        filters.add("sepia");
-        filters.add("bleachbypass");
-
-    }
+//    private void initializeFilters() {
+//        masks = new ArrayList<>();
+//        masks.add("none");
+//        masks.add("aviators");
+//        masks.add("flower_crown");
+//        masks.add("bigmouth");
+//        masks.add("dalmatian");
+//        masks.add("flowers");
+//        masks.add("koala");
+//        masks.add("lion");
+//        masks.add("smallface");
+//        masks.add("teddycigar");
+//        masks.add("background_segmentation");
+//        masks.add("tripleface");
+//        masks.add("sleepingmask");
+//        masks.add("fatify");
+//        masks.add("obama");
+//        masks.add("mudmask");
+//        masks.add("pug");
+//        masks.add("slash");
+//        masks.add("twistedface");
+//        masks.add("grumpycat");
+//        masks.add("Helmet_PBR_V1");
+//        masks.add("frankenstein");
+//        masks.add("manly_face");
+//        masks.add("plastic_ocean");
+//        masks.add("pumpkin");
+//        masks.add("scuba");
+//
+//        masks.add("tape_face");
+//        masks.add("tiny_sunglasses");
+//        effects = new ArrayList<>();
+//        effects.add("none");
+//        effects.add("fire");
+//        effects.add("rain");
+//        effects.add("heart");
+//        effects.add("blizzard");
+//        effects.add("fairy_lights");
+//        effects.add("beauty");
+//        filters = new ArrayList<>();
+//        filters.add("none");
+//        filters.add("filmcolorperfection");
+//        filters.add("tv80");
+//        filters.add("drawingmanga");
+//        filters.add("sepia");
+//        filters.add("bleachbypass");
+//
+//    }
 
     private void initalizeViews() {
-        ImageButton previousMask = findViewById(R.id.previousMask);
-        ImageButton nextMask = findViewById(R.id.nextMask);
-
-        final RadioButton radioMasks = findViewById(R.id.masks);
-        final RadioButton radioEffects = findViewById(R.id.effects);
-        final RadioButton radioFilters = findViewById(R.id.filters);
+//        ImageButton previousMask = findViewById(R.id.previousMask);
+//        ImageButton nextMask = findViewById(R.id.nextMask);
+//
+//        final RadioButton radioMasks = findViewById(R.id.masks);
+//        final RadioButton radioEffects = findViewById(R.id.effects);
+//        final RadioButton radioFilters = findViewById(R.id.filters);
 
         SurfaceView arView = findViewById(R.id.surface);
 
@@ -310,44 +318,44 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         });
 
 
-        previousMask.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                gotoPrevious();
-            }
-        });
-
-        nextMask.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                gotoNext();
-            }
-        });
-
-        radioMasks.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                radioEffects.setChecked(false);
-                radioFilters.setChecked(false);
-                activeFilterType = 0;
-            }
-        });
-        radioEffects.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                radioMasks.setChecked(false);
-                radioFilters.setChecked(false);
-                activeFilterType = 1;
-            }
-        });
-        radioFilters.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                radioEffects.setChecked(false);
-                radioMasks.setChecked(false);
-                activeFilterType = 2;
-            }
-        });
+//        previousMask.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                gotoPrevious();
+//            }
+//        });
+//
+//        nextMask.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                gotoNext();
+//            }
+//        });
+//
+//        radioMasks.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                radioEffects.setChecked(false);
+//                radioFilters.setChecked(false);
+//                activeFilterType = 0;
+//            }
+//        });
+//        radioEffects.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                radioMasks.setChecked(false);
+//                radioFilters.setChecked(false);
+//                activeFilterType = 1;
+//            }
+//        });
+//        radioFilters.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                radioEffects.setChecked(false);
+//                radioMasks.setChecked(false);
+//                activeFilterType = 2;
+//            }
+//        });
     }
     /*
             get interface orientation from
@@ -514,43 +522,43 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     };
 
 
-    private String getFilterPath(String filterName) {
-        if (filterName.equals("none")) {
-            return null;
-        }
+//    private String getFilterPath(String filterName) {
+//        if (filterName.equals("none")) {
+//            return null;
+//        }
+//
+//        Toast.makeText(RecorderActivity.this,""+filterName,Toast.LENGTH_SHORT).show();
+//
+//        return "file:///android_asset/" + filterName;
+//
+//
+//    }
 
-        Toast.makeText(RecorderActivity.this,""+filterName,Toast.LENGTH_SHORT).show();
+//    private void gotoNext() {
+//        if (activeFilterType == 0) {
+//            currentMask = (currentMask + 1) % masks.size();
+//            deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
+//        } else if (activeFilterType == 1) {
+//            currentEffect = (currentEffect + 1) % effects.size();
+//            deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
+//        } else if (activeFilterType == 2) {
+//            currentFilter = (currentFilter + 1) % filters.size();
+//            deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
+//        }
+//    }
 
-        return "file:///android_asset/" + filterName;
-
-
-    }
-
-    private void gotoNext() {
-        if (activeFilterType == 0) {
-            currentMask = (currentMask + 1) % masks.size();
-            deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
-        } else if (activeFilterType == 1) {
-            currentEffect = (currentEffect + 1) % effects.size();
-            deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
-        } else if (activeFilterType == 2) {
-            currentFilter = (currentFilter + 1) % filters.size();
-            deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
-        }
-    }
-
-    private void gotoPrevious() {
-        if (activeFilterType == 0) {
-            currentMask = (currentMask - 1 + masks.size()) % masks.size();
-            deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
-        } else if (activeFilterType == 1) {
-            currentEffect = (currentEffect - 1 + effects.size()) % effects.size();
-            deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
-        } else if (activeFilterType == 2) {
-            currentFilter = (currentFilter - 1 + filters.size()) % filters.size();
-            deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
-        }
-    }
+//    private void gotoPrevious() {
+//        if (activeFilterType == 0) {
+//            currentMask = (currentMask - 1 + masks.size()) % masks.size();
+//            deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
+//        } else if (activeFilterType == 1) {
+//            currentEffect = (currentEffect - 1 + effects.size()) % effects.size();
+//            deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
+//        } else if (activeFilterType == 2) {
+//            currentFilter = (currentFilter - 1 + filters.size()) % filters.size();
+//            deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
+//        }
+//    }
 
     @Override
     protected void onStop() {
@@ -640,9 +648,9 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     @Override
     public void initialized() {
         // Restore effect state after deepar release
-        deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
-        deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
-        deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
+//        deepAR.switchEffect("mask", getFilterPath(masks.get(currentMask)));
+//        deepAR.switchEffect("effect", getFilterPath(effects.get(currentEffect)));
+//        deepAR.switchEffect("filter", getFilterPath(filters.get(currentFilter)));
     }
 
     @Override
@@ -804,7 +812,64 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         });
     }
 
+    public void setFilters(FilterEntityParser.FilterEntity pFilterEntity){
+        if(pFilterEntity.getFilterPath() == null){
+            deepAR.switchEffect("filter", (String) null);
+            filterSheetFragment.dismiss();
+            currentFilterName.setText("");
+            System.out.println("Filter is none");
+            return;
+        }
+        String dirPath = me.getExternalFilesDir(null).getAbsolutePath();
+        String filePath = dirPath +Constants.PATH_SEPARATOR+ Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+Constants.CACHED_FILTER+Constants.PATH_SEPARATOR+pFilterEntity.getFilterPath();
+        File filterPath = new File(filePath);
+        if(filterPath.exists()){
+            deepAR.switchEffect("filter", filterPath.getAbsolutePath());
+            filterSheetFragment.dismiss();
+            System.out.println("Filter is loaded from cached");
+            currentFilterName.setText(pFilterEntity.getFilterName());
+            return;
+        }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        AmazonS3 s3client = new AmazonS3Client(new BasicAWSCredentials("AKIAXYS3SWHQ4FGICLUQ","lsJ/XSGYprv5z37iEmwcCmsbfRTVRb2NiF/B12sq"));
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+
+                try{
+                    S3Object s3object = s3client.getObject("grastone-feed-bucket", "filters/"+pFilterEntity.getFilterPath());
+                    S3ObjectInputStream inputStream = s3object.getObjectContent();
+
+                    FileUtils.copyInputStreamToFile(inputStream, filterPath);
+
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            deepAR.switchEffect("filter", filterPath.getAbsolutePath());
+                            currentFilterName.setText(pFilterEntity.getFilterName());
+                        }
+                    });
+                }catch (Exception e){
+                    e.printStackTrace();
+
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(me, "Unable to load filter", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+            }
+
+        });
 
 
 
+
+        filterSheetFragment.dismiss();
+    }
 }
