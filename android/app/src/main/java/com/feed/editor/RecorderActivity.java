@@ -49,7 +49,12 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.feed.FilterSheetFragment;
+import com.feed.MainActivity;
+import com.feed.MainApplication;
 import com.feed.R;
 import com.feed.entity.FilterEntityParser;
 import com.feed.util.Constants;
@@ -165,6 +170,10 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         music.setLooping(false);
 
 
+
+
+
+
         recorder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -182,6 +191,28 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         OpenBottomSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                System.out.println("Caliing react native function1");
+                try{
+                    System.out.println("Caliing react native function2");
+                    WritableMap map = Arguments.createMap();
+                    map.putString("test","test");
+                    MainApplication
+                            .getInstance()
+                            .getReactNativeHost()
+                            .getReactInstanceManager()
+                            .getCurrentReactContext()
+                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                            .emit("CallMusicPicker",map);
+
+
+                    Intent intent = new Intent(RecorderActivity.this,MainActivity.class);
+                    startActivity(intent);
+                    System.out.println("Caliing react native function3");
+                }catch (Exception e){
+                    e.printStackTrace();
+                    System.out.println("Caliing react native function error");
+                }
+
                 filterSheetFragment = new FilterSheetFragment(me);
                 filterSheetFragment.show(getSupportFragmentManager(),filterSheetFragment.getTag());
             }

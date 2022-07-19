@@ -19,11 +19,16 @@ import PhoneScreen from '../../screens/Auth/PhoneScreen';
 import OtpScreen from '../../screens/Auth/OtpScreen';
 import RecorderView from './RecorderExample';
 import SaveProfileScreen from '../../screens/UserProfile/SaveProfileScreen';
+import MusicPicker from '../../screens/MusicPicker'; 
+import { initEventListener } from '../../helpers/EventListener'; 
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+
+  
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Landing">
@@ -50,12 +55,19 @@ export default function App() {
           component={SaveProfileScreen}
           options={{headerShown: false}}
         />
+
+        <Stack.Screen
+          name="MusicPicker"
+          component={MusicPicker}
+          options={{headerShown: false}}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-function TabNavigator() {
+function TabNavigator({ route, navigation }) {
+  initEventListener(navigation);
   return (
     <Tab.Navigator
       screenOptions={{

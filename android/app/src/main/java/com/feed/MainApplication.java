@@ -15,6 +15,7 @@ import java.util.List;
 
 public class MainApplication extends Application implements ReactApplication {
 
+  private static  MainApplication me ;
   private final ReactNativeHost mReactNativeHost =
       new ReactNativeHost(this) {
         @Override
@@ -48,6 +49,7 @@ public class MainApplication extends Application implements ReactApplication {
     super.onCreate();
     SoLoader.init(this, /* native exopackage */ false);
     initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
+    me =this;
   }
 
   /**
@@ -80,4 +82,9 @@ public class MainApplication extends Application implements ReactApplication {
       }
     }
   }
+
+
+    public static MainApplication getInstance() {
+        return me;
+    }
 }

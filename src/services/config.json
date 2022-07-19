@@ -1,6 +1,6 @@
 {
     "BaseURLOG":"http://ec2-15-206-100-87.ap-south-1.compute.amazonaws.com",
-    "BaseURL":"http://192.168.0.109:80",
+    "BaseURL":"http://192.168.0.111:80",
     "SendOTPURL":"/auth/otp/send",
     "VeriyOTPURL":"/auth/otp/verify",
     "GetUserDetailsURL":"/auth/user/{pMobileNo}",
