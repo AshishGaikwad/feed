@@ -1,16 +1,21 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {FlatList, View, Text, BackHandler} from 'react-native';
-import {Avatar, TabView, Tab} from 'react-native-elements';
+import React, { useState, useRef, useEffect } from 'react';
+import { FlatList, View, Text, BackHandler, StyleSheet, TouchableOpacity } from 'react-native';
+import { Avatar, TabView, Tab } from 'react-native-elements';
+import Button from '../../components/Button';
 import RecorderView from '../../routes/BaseRoute/RecorderExample';
+import music from '../../services/samplemusic.json';
+
 
 function MusicPicker() {
   const [index, setIndex] = useState(0);
 
-  useEffect(()=>{
-    BackHandler.addEventListener('hardwareBackPress', (e)=>{
-        
-        console.log("back button pressed");
-        RecorderView.NavigateMe();
+
+
+  useEffect(() => {
+    BackHandler.addEventListener('hardwareBackPress', (e) => {
+
+      console.log("back button pressed");
+      RecorderView.NavigateMe();
 
     });
   })
@@ -18,76 +23,45 @@ function MusicPicker() {
 
 
 
+
+
+  const press = (key)=>{
+    console.log(key);
+    RecorderView.NavigateMe(music[key]);
+  }
+  
   return (
-    <View>
-        <Text style={{textAlign: 'center'}}>Profile</Text>
-      <View
-        style={{
-          margin: 20,
-        }}>
-        <View
-          style={{
-            alignItems: 'center',
+    <View >
+      <Button>hi</Button>
+      {
+        Object.keys(music).map(key => {
+          return (<TouchableOpacity onPress={() => press(key)}><Button style={styles.text}>{key}</Button></TouchableOpacity>);
 
-            justifyContent: 'center',
-          }}>
-          <Avatar
-            rounded
-            size="xlarge"
-            source={{
-              uri: 'https://picsum.photos/id/237/200/300',
-            }}></Avatar>
-          <Text>Ashish Gaikwad</Text>
-          <Text>_ashish_</Text>
-          <View style={{flexDirection: 'row'}}>
-            <View style={{margin: 10}}>
-              <Text style={{textAlign: 'center'}}>100M</Text>
-              <Text style={{textAlign: 'center'}}>Likes</Text>
-            </View>
-            <View style={{margin: 10}}>
-              <Text style={{textAlign: 'center'}}>1M</Text>
-              <Text style={{textAlign: 'center'}}>Followers</Text>
-            </View>
-            <View style={{margin: 10}}>
-              <Text style={{textAlign: 'center'}}>100</Text>
-              <Text style={{textAlign: 'center'}}>Followings</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <View>
-        <Tab
-          value={index}
-          onChange={e => setIndex(e)}
-          indicatorStyle={{
-            backgroundColor: 'white',
-            height: 3,
-          }}
-          variant="primary">
-          <Tab.Item
-            title="Feeds"
-            titleStyle={{fontSize: 12}}
-            // icon={{name: 'timer', type: 'ionicon', color: 'white'}}
-          />
-          <Tab.Item
-            title="Liked Feeds"
-            titleStyle={{fontSize: 12}}
-            // icon={{name: 'heart', type: 'ionicon', color: 'white'}}
-          />
-        </Tab>
-        
-        <TabView value={index} onChange={setIndex} animationType="spring">
-          <TabView.Item style={{backgroundColor: 'red', width: '100%'}}>
-            <Text style={{backgroundColor:'red'}}>Recent</Text>
-          </TabView.Item>
-          <TabView.Item style={{backgroundColor: 'blue', width: '100%'}}>
-            <Text>Favorite</Text>
-          </TabView.Item>
-        </TabView>
-      </View>
+        })
+      }
     </View>
   );
+
+  
 }
+
+
+const styles = StyleSheet.create({
+  circle: {
+    padding: 8,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: 'black',
+    height: 35,
+    marginBottom: 10,
+    alignItems: 'center'
+  },
+  text: {
+    fontFamily: "CircularStd-Book",
+    fontSize: 14,
+    color: '#2f354b',
+    textAlign: 'center'
+  }
+});
 
 export default MusicPicker;

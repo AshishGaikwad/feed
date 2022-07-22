@@ -21,6 +21,7 @@ import RecorderView from './RecorderExample';
 import SaveProfileScreen from '../../screens/UserProfile/SaveProfileScreen';
 import MusicPicker from '../../screens/MusicPicker'; 
 import { initEventListener } from '../../helpers/EventListener'; 
+import CameraScreen from '../../screens/Camera';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -61,6 +62,13 @@ export default function App() {
           component={MusicPicker}
           options={{headerShown: false}}
         />
+        <Stack.Screen
+          name="CameraScreen"
+          component={CameraScreen}
+          options={{headerShown: false}}
+        />
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -118,7 +126,10 @@ function TabNavigator({ route, navigation }) {
             e.preventDefault();
 
             AsyncStorage.getItem('IsLoggedIn').then(data => {
-              if (data != null && data =="Y") RecorderView.NavigateMe();
+              if (data != null && data =="Y") {
+                RecorderView.NavigateMe("");
+                // navigation.navigate('CameraScreen')
+              }
               else navigation.navigate('PhoneScreen');
             });
           },

@@ -12,6 +12,8 @@ target 'feed' do
     :hermes_enabled => false
   )
 
+  pod 'RNReactNativeGetMusicFiles', :path => '../node_modules/react-native-get-music-files'
+
   target 'feedTests' do
     inherit! :complete
     # Pods for testing

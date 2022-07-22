@@ -39,4 +39,15 @@ public class RecoderViewModule extends ReactContextBaseJavaModule {
         }
     }
 
+     @ReactMethod
+    public void NavigateMe(String pMusicBase64){
+
+        Intent intent = new Intent(context, RecorderActivity.class);
+        if(intent.resolveActivity(context.getPackageManager()) != null){
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK );
+            intent.putExtra("MusicData",pMusicBase64);
+            context.startActivity(intent);
+        }
+    }
+
 }

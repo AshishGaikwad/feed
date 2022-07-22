@@ -11,6 +11,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
 import android.Manifest;
@@ -49,6 +51,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.util.Base64;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
@@ -59,6 +62,7 @@ import com.feed.R;
 import com.feed.entity.FilterEntityParser;
 import com.feed.util.Constants;
 import com.feed.util.Filters;
+import com.feed.util.SampleSong;
 import com.feed.view.ProgressBarListener;
 import com.feed.view.RecorderView;
 import com.feed.view.SegmentedProgressBar;
@@ -68,22 +72,29 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 
 import org.apache.commons.io.FileUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import VideoHandle.EpEditor;
-import VideoHandle.EpVideo;
-import VideoHandle.OnEditorListener;
+//import VideoHandle.EpEditor;
+//import VideoHandle.EpVideo;
+//import VideoHandle.OnEditorListener;
 import ai.deepar.ar.ARErrorType;
 import ai.deepar.ar.AREventListener;
 import ai.deepar.ar.CameraResolutionPreset;
@@ -128,16 +139,14 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
     private File videoFileName;
     private RecorderView recorder;
     private SegmentedProgressBar video_progress;
-
     private long recordTimeInMillis = 30*1000;
-
     int sec_passed = 0;
     long time_in_milis = 0;
     private String currentSession = ""+System.currentTimeMillis();
     private List<File> clipList = new ArrayList<>();
     private ImageView OpenBottomSheet ;
+    private ImageView musicButton ;
     MediaPlayer music;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,29 +154,51 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         setContentView(R.layout.activity_recorder);
         currentSession = ""+System.currentTimeMillis();
         clipList = new ArrayList<>();
-        ArrayAdapter adapter = new ArrayAdapter<String>(this, R.layout.activity_listview, Filters.getAllFilters());
+        //ArrayAdapter adapter = new ArrayAdapter<String>(this, R.layout.activity_listview, Filters.getAllFilters());
         File sessionDraftPath = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession);
         if(!sessionDraftPath.exists()) {
             sessionDraftPath.mkdirs();
         }
+
+        Bundle extras = getIntent().getExtras();
+        String musicData;
+
+        if (extras != null) {
+            musicData = extras.getString("MusicData");
+            System.out.println("MusicData============="+musicData);
+
+            if(musicData != null && !musicData.equalsIgnoreCase("")) {
+                String mdirPath = me.getExternalFilesDir(null).getAbsolutePath();
+                String mfilePath = mdirPath + Constants.PATH_SEPARATOR + Constants.DRAFT_FOLDER + Constants.PATH_SEPARATOR +currentSession+ Constants.PATH_SEPARATOR + "current_audio.mp3";
+                File musicPath = new File(mfilePath);
+
+                byte[] b = Base64.decode(musicData);
+                try {
+                    FileUtils.copyInputStreamToFile(new ByteArrayInputStream(b), musicPath);
+                    music = new MediaPlayer();
+                    try {
+                        music.setDataSource(mfilePath);
+                        music.prepare();
+                        System.out.println("music.getDuration()============="+music.getDuration());
+                        recordTimeInMillis = music.getDuration();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    music.setVolume(1f, 1f);
+                    music.setLooping(false);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         currentFilterName = findViewById(R.id.current_filter_name);
         recorder = findViewById(R.id.recorder);
         OpenBottomSheet = findViewById(R.id.bottom_sheet_button);
+        musicButton = findViewById(R.id.music_button);
         recorder.invalidate();
         initProgressBar();
-        AssetFileDescriptor descriptor = null;
-        music = new MediaPlayer();
-        try {
-            descriptor = getAssets().openFd("MeetSong.mp3");
-            music.setDataSource(descriptor.getFileDescriptor(), descriptor.getStartOffset(), descriptor.getLength());
-            descriptor.close();
-            music.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //AssetFileDescriptor descriptor = null;
 
-        music.setVolume(1f, 1f);
-        music.setLooping(false);
 
 
 
@@ -191,6 +222,14 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
         OpenBottomSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                filterSheetFragment = new FilterSheetFragment(me);
+                filterSheetFragment.show(getSupportFragmentManager(),filterSheetFragment.getTag());
+            }
+        });
+
+        musicButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 System.out.println("Caliing react native function1");
                 try{
                     System.out.println("Caliing react native function2");
@@ -212,9 +251,6 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
                     e.printStackTrace();
                     System.out.println("Caliing react native function error");
                 }
-
-                filterSheetFragment = new FilterSheetFragment(me);
-                filterSheetFragment.show(getSupportFragmentManager(),filterSheetFragment.getTag());
             }
         });
 
@@ -230,7 +266,6 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
              ActivityCompat.requestPermissions(this, new String[]{ Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO },
                     1);
         } else {
-            // Permission has already been granted
             initialize();
         }
         super.onStart();
@@ -713,20 +748,22 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
 
     private void pause() {
         deepAR.stopVideoRecording();
-        Toast.makeText(getApplicationContext(), "Recording " + videoFileName.getName() + " saved.", Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(), "Recording " + videoFileName.getName() + " saved.", Toast.LENGTH_LONG).show();
         recorder.pause();
         video_progress.pause();
         video_progress.addDivider();
-        music.pause();
+        if(music!=null)
+            music.pause();
     }
 
     private void resume() {
         videoFileName = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+Constants.CLIP+(clipList.size()+1));
         clipList.add(videoFileName);
         deepAR.startVideoRecording(videoFileName.toString(), width/2, height/2);
-        Toast.makeText(getApplicationContext(), "Recording started.", Toast.LENGTH_SHORT).show();
+//        Toast.makeText(getApplicationContext(), "Recording started.", Toast.LENGTH_SHORT).show();
         recorder.start();
         video_progress.resume();
+        if(music!=null)
         music.start();
     }
 
@@ -737,77 +774,53 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
                 "Loading. Please wait...", true);
 
         dialog.show();
-        CameraResolutionPreset cameraResolutionPreset = CameraResolutionPreset.P1920x1080;
-        ArrayList<EpVideo> epVideos =  new  ArrayList<>();
+        //CameraResolutionPreset cameraResolutionPreset = CameraResolutionPreset.P1920x1080;
+
+        Intent previewIntent = new Intent(RecorderActivity.this, PreviewActivity.class);
+        previewIntent.putExtra("draft_id",currentSession);
+        previewIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(previewIntent);
+        finish();
+        dialog.dismiss();
+
+//        ArrayList<EpVideo> epVideos =  new  ArrayList<>();
        // EpDraw epDraw = new EpDraw("file:///android_asset/app_logo.png",10,10,50,50,false);
 
-        for(File file : clipList){
-            EpVideo epVideo =new EpVideo (file.getAbsolutePath());
-           // epVideo.addDraw(epDraw);
-            epVideos.add(epVideo);
-        }
+//        for(File file : clipList){
+//            EpVideo epVideo =new EpVideo (file.getAbsolutePath());
+//           // epVideo.addDraw(epDraw);
+//            epVideos.add(epVideo);
+//        }
 
 
 
-        String finalVideo = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build.mp4").getAbsolutePath();
-//        EpEditor.OutputOption outputOption =new EpEditor.OutputOption(finalVideo);
-//        outputOption.setWidth(cameraResolutionPreset.getHeight());
-//        outputOption.setHeight(cameraResolutionPreset.getWidth());
-//        outputOption.frameRate = 25 ;
-//        outputOption.bitRate = 10 ; //Default
-
-        EpEditor.mergeByLc(this,epVideos, new EpEditor.OutputOption(finalVideo), new OnEditorListener() {
-            @Override
-            public void onSuccess() {
-                Intent previewIntent = new Intent(RecorderActivity.this, PreviewActivity.class);
-                previewIntent.putExtra("videoPath",Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build.mp4");
-                startActivity(previewIntent);
-                System.out.println("Video merged succesfully");
-                //EpEditor.music(videoPath, audioPath, outfilePath, 1, 0.7, new OnEditorListener());
-
-
-                dialog.dismiss();
-            }
-
-            @Override
-            public void onFailure() {
-                System.out.println("Video merged failed");
-                dialog.dismiss();
-            }
-
-            @Override
-            public void onProgress(float progress) {
-                System.out.println("Video merged progress");
-                dialog.dismiss();
-            }
-        });
-//        EpEditor.mergeByLc(epVideos,outputOption, new  OnEditorListener() {
+//        String finalVideo = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build.mp4").getAbsolutePath();
+//        String finalVideoAud = new File(getExternalFilesDir(null), Constants.DRAFT_FOLDER+Constants.PATH_SEPARATOR+currentSession+Constants.PATH_SEPARATOR+"build_Aud.mp4").getAbsolutePath();
+//        String mdirPath = me.getExternalFilesDir(null).getAbsolutePath();
+//        String mfilePath = mdirPath + Constants.PATH_SEPARATOR + Constants.DRAFT_FOLDER + Constants.PATH_SEPARATOR + "MUSIC" + Constants.PATH_SEPARATOR + "music.mp3";
+//        EpEditor.mergeByLc(this,epVideos, new EpEditor.OutputOption(finalVideo), new OnEditorListener() {
 //            @Override
-//            public  void  onSuccess () {
+//            public void onSuccess(){
 //                Intent previewIntent = new Intent(RecorderActivity.this, PreviewActivity.class);
 //                previewIntent.putExtra("videoPath",finalVideo);
+//                previewIntent.putExtra("audioPath",mfilePath);
 //                startActivity(previewIntent);
 //                System.out.println("Video merged succesfully");
-//                //EpEditor.music(videoPath, audioPath, outfilePath, 1, 0.7, new OnEditorListener());
-//
-//
 //                dialog.dismiss();
 //            }
 //
 //            @Override
-//            public  void  onFailure () {
+//            public void onFailure() {
 //                System.out.println("Video merged failed");
 //                dialog.dismiss();
 //            }
 //
 //            @Override
-//            public  void  onProgress ( float  progress ) {
-//                System.out.println("Video merged in progress");
+//            public void onProgress(float progress) {
+//                System.out.println("Video merged progress");
+//                dialog.dismiss();
 //            }
 //        });
-
-
-
 
 
 
@@ -828,10 +841,13 @@ public class RecorderActivity extends AppCompatActivity implements SurfaceHolder
             public void TimeinMill(long mills) {
                 time_in_milis = mills;
                 sec_passed = (int) (mills / 1000);
-
-                if (sec_passed > (recordTimeInMillis / 1000) - 1) {
-
+               //System.out.println("sec_passed"+sec_passed);
+                //System.out.println("recordTimeInMillis"+(recordTimeInMillis / 1000));
+                //System.out.println("(recordTimeInMillis / 1000) - 1"+((recordTimeInMillis / 1000) - 1));
+                if (time_in_milis >= recordTimeInMillis) {
+                    System.out.println("previewing data");
                     preview();
+
                 }
 
 //                if (is_recording_timer_enable && sec_passed >= recording_time) {
