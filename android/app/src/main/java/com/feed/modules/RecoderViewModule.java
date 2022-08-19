@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.feed.editor.RecorderActivity;
+//import com.feed.editor.RecorderActivity;
 
 import javax.annotation.Nonnull;
 
@@ -32,22 +32,22 @@ public class RecoderViewModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void NavigateMe(){
-        Intent intent = new Intent(context, RecorderActivity.class);
-        if(intent.resolveActivity(context.getPackageManager()) != null){
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
-        }
+//        Intent intent = new Intent(context, RecorderActivity.class);
+//        if(intent.resolveActivity(context.getPackageManager()) != null){
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            context.startActivity(intent);
+//        }
     }
 
      @ReactMethod
     public void NavigateMe(String pMusicBase64){
 
-        Intent intent = new Intent(context, RecorderActivity.class);
-        if(intent.resolveActivity(context.getPackageManager()) != null){
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK );
-            intent.putExtra("MusicData",pMusicBase64);
-            context.startActivity(intent);
-        }
+//        Intent intent = new Intent(context, RecorderActivity.class);
+//        if(intent.resolveActivity(context.getPackageManager()) != null){
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK );
+//            intent.putExtra("MusicData",pMusicBase64);
+//            context.startActivity(intent);
+//        }
     }
 
 }

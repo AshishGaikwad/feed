@@ -14,6 +14,10 @@ target 'feed' do
 
   pod 'RNReactNativeGetMusicFiles', :path => '../node_modules/react-native-get-music-files'
 
+  pod 'react-native-background-timer', :path => '../node_modules/react-native-background-timer'
+
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+
   target 'feedTests' do
     inherit! :complete
     # Pods for testing

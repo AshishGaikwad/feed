@@ -22,6 +22,7 @@ import SaveProfileScreen from '../../screens/UserProfile/SaveProfileScreen';
 import MusicPicker from '../../screens/MusicPicker'; 
 import { initEventListener } from '../../helpers/EventListener'; 
 import CameraScreen from '../../screens/Camera';
+import EditorScreen from '../../screens/Editor';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -65,6 +66,12 @@ export default function App() {
         <Stack.Screen
           name="CameraScreen"
           component={CameraScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name="EditorScreen"
+          component={EditorScreen}
           options={{headerShown: false}}
         />
 
@@ -125,13 +132,13 @@ function TabNavigator({ route, navigation }) {
           tabPress: e => {
             e.preventDefault();
 
-            AsyncStorage.getItem('IsLoggedIn').then(data => {
-              if (data != null && data =="Y") {
-                RecorderView.NavigateMe("");
-                // navigation.navigate('CameraScreen')
-              }
-              else navigation.navigate('PhoneScreen');
-            });
+            // AsyncStorage.getItem('IsLoggedIn').then(data => {
+            //   if (data != null && data =="Y") {
+                // RecorderView.NavigateMe("");
+                navigation.navigate('CameraScreen',{session:Date.now().toString()})
+              // }
+              // else navigation.navigate('PhoneScreen');
+            // });
           },
         })}
       />
