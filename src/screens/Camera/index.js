@@ -10,12 +10,14 @@ import Icons from '../../components/Icons';
 import isFileExist, { copyFile, createDirectory, createFile, readFile } from '../../services/file-service';
 import RNFS from 'react-native-fs';
 import { useNavigation } from '@react-navigation/native';
+import VideoUtil from '../../services/video-service';
 
 function CameraScreen(props) {
   const BasePath = RNFS.DocumentDirectoryPath;
   const DEFAULT_DRAFT_FOLDER_PATH = BasePath + '/.drafts';
   const DEFAULT_DRAFT_FILE_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_' + props.route.params.session + "__.json";
   const DEFAULT_DRAFT_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__{version}.mp4";
+  const DEFAULT_DRAFT_FINAL_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__final.mp4";
 
   const navigation = useNavigation();
   const camera = useRef(null);
@@ -30,8 +32,7 @@ function CameraScreen(props) {
   const [flash, setFlash] = useState("off");
   const intervalRef = useRef();
   const [count, setCount] = useState(0);
-  const [disableRecorder,setDisableRecorder] = useState(false)
-
+  const [disableRecorder, setDisableRecorder] = useState(false)
 
   useEffect(() => {
     const processFiles = async () => {
@@ -80,18 +81,21 @@ function CameraScreen(props) {
     // console.log(maxTime, count, val)
     setProgress(val);
 
+    //console.log("stopped",camera.current.isStopped)
+
     if (count >= maxTime) {
       //console.log("time is up")
       //clearInterval(intervalRef.current)
-      const stopme = async()=>{await camera.current.stopRecording()}
+      const stopme = async () => {await camera.current.stopRecording()}
       stopme();
       setRecordingStatus("STOP");
       setDisableRecorder(true);
-      
+      mergeVideos();
 
-      navigation.navigate('EditorScreen',{session:props.route.params.session})
 
-    }else{
+      // navigation.navigate('EditorScreen',{session:props.route.params.session})
+
+    } else {
       setDisableRecorder(false)
     }
 
@@ -136,7 +140,6 @@ function CameraScreen(props) {
           await copyFile(video.path, videoFileName);
           DraftData.videos.push({ filename: videoFileName, duration: video.size });
           await createFile(DEFAULT_DRAFT_FILE_PATH, JSON.stringify(DraftData));
-          console.log("DraftData", DraftData)
         },
         onRecordingError: (error) => console.error(error),
       });
@@ -151,6 +154,38 @@ function CameraScreen(props) {
 
   const onVideoRecord = () => {
     setCount((count) => count + 1);
+  }
+
+
+  const mergeVideos = async () => {
+    let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
+    DraftData = JSON.parse(DraftData);
+    let pVideoArray = DraftData.videos;
+    let fileName = DEFAULT_DRAFT_FOLDER_PATH + "/ffmpeg_concat.txt";
+    var videoListBuilder = "";  
+    for (var i = 0; i < pVideoArray.length; i++) {
+      console.log(i, pVideoArray[i]);
+      videoListBuilder +="file "+ (pVideoArray[i].filename) + "\r\n"
+    }
+
+    // console.log("videoListBuilder",videoListBuilder)
+
+    const fileCreation = await createFile(fileName, videoListBuilder);
+
+    // console.log("fileCreation",fileCreation)
+    console.log("fileCreationData", await readFile(fileName));
+
+
+    const isMerged = VideoUtil.mergeVideo(fileName, DEFAULT_DRAFT_FINAL_VIDEO_PATH);
+
+    if(await isMerged){
+      navigation.navigate('EditorScreen',{session:props.route.params.session})
+    }else{
+      console.log("Merging failed")
+    }
+
+
+
   }
 
 
@@ -175,6 +210,9 @@ function CameraScreen(props) {
         enableZoomGesture={true}
         torch={flash}
         videoStabilizationMode='auto'
+        VideoFileType='mp4'
+        CameraVideoCodec='h264'
+        
       />
 
 
