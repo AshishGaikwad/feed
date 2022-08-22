@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState, useRef, useEffect } from 'react';
 import { FlatList, View, Text, BackHandler, StyleSheet, TouchableOpacity } from 'react-native';
 import { Avatar, TabView, Tab } from 'react-native-elements';
@@ -7,18 +8,19 @@ import music from '../../services/samplemusic.json';
 
 
 function MusicPicker() {
+  const navigation = useNavigation();
   const [index, setIndex] = useState(0);
 
 
 
-  useEffect(() => {
-    BackHandler.addEventListener('hardwareBackPress', (e) => {
+  // useEffect(() => {
+  //   BackHandler.addEventListener('hardwareBackPress', (e) => {
 
-      console.log("back button pressed");
-      RecorderView.NavigateMe();
+  //     console.log("back button pressed");
+  //     RecorderView.NavigateMe();
 
-    });
-  })
+  //   });
+  // })
 
 
 
@@ -26,8 +28,8 @@ function MusicPicker() {
 
 
   const press = (key)=>{
-    console.log(key);
-    RecorderView.NavigateMe(music[key]);
+    // console.log(key);
+    navigation.navigate('CameraScreen',{music:music[key]})
   }
   
   return (
