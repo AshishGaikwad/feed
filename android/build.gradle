@@ -12,6 +12,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://artifactory.img.ly/artifactory/imgly" }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:4.2.2")
@@ -37,6 +38,7 @@ allprojects {
                 excludeGroup "com.facebook.react"
             }
         }
+        
 
         jcenter() {
             content {
@@ -45,5 +47,7 @@ allprojects {
         }
         google()
         maven { url 'https://www.jitpack.io' }
+        
     }
 }
+

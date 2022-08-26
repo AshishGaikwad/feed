@@ -57,3 +57,17 @@ export async function copyFile(pFrom,pTo){
         
     }
 }
+
+export async function deleteFile(pPath){
+    try {
+        RNFS.exists(filePath)
+        .then((res) => {
+          if (res) {
+            RNFS.unlink(filePath)
+              .then(() => console.log('FILE DELETED'))
+          }
+        }) 
+    } catch (error) {
+        console.log(error)
+    }
+}

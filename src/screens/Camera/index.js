@@ -2,16 +2,18 @@
 
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Text, StyleSheet, View, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { Text, StyleSheet, View, TouchableOpacity, Dimensions, Image, Alert, ActivityIndicator } from 'react-native';
 import { Camera, useCameraDevices } from 'react-native-vision-camera';
 import RecorderView from '../../routes/BaseRoute/RecorderExample';
 import * as Progress from 'react-native-progress';
 import Icons from '../../components/Icons';
-import isFileExist, { copyFile, createDirectory, createFile, readFile } from '../../services/file-service';
+import isFileExist, { copyFile, createDirectory, createFile, deleteFile, readFile } from '../../services/file-service';
 import RNFS from 'react-native-fs';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import VideoUtil from '../../services/video-service';
-import SoundPlayer from 'react-native-sound-player';
+import Video from 'react-native-video';
+import Loader from '../../components/Loader';
+
 
 function CameraScreen(props) {
   const BasePath = RNFS.DocumentDirectoryPath;
@@ -22,6 +24,7 @@ function CameraScreen(props) {
   const DEFAULT_DRAFT_FINAL_MUSIC_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_MUSIC_' + props.route.params.session + "__final.mp3";
   // console.log("props.route.params.music",props.route.params.music)
 
+  const [showLoader, isShowLoader] = useState(false);
   const navigation = useNavigation();
   const camera = useRef(null);
   const devices = useCameraDevices();
@@ -37,13 +40,12 @@ function CameraScreen(props) {
   const [count, setCount] = useState(0);
   const [disableRecorder, setDisableRecorder] = useState(false)
   var musicPlayer = null;
+  const [playing, setPlaying] = useState(false);
+  const MusicURL = 'https://file-examples.com/storage/fe5467a6a163010b197fb20/2017/11/file_example_MP3_700KB.mp3';
 
   useEffect(() => {
 
-    // SoundPlayer.loadUrl("https://file-examples.com/storage/fe5467a6a163010b197fb20/2017/11/file_example_MP3_700KB.mp3")  
 
-    var s = Audio("https://file-examples.com/storage/fe5467a6a163010b197fb20/2017/11/file_example_MP3_700KB.mp3");
-    s.play();
     const processFiles = async () => {
       const isDraftExist = await isFileExist(DEFAULT_DRAFT_FOLDER_PATH);
       if (!isDraftExist) {
@@ -62,13 +64,13 @@ function CameraScreen(props) {
 
         await createFile(DEFAULT_DRAFT_FILE_PATH, JSON.stringify(jsonMeta));
 
-        if(props.route.params.music != null && props.route.params.music != undefined){
-          if(await createFile(DEFAULT_DRAFT_FINAL_MUSIC_PATH, Buffer.from(props.route.params.music))){
-            musicPlayer = SoundPlayer.loadSoundFile(DEFAULT_DRAFT_FINAL_MUSIC_PATH);
-            musicPlayer.play();
-          }
-          
-        }
+        // if(props.route.params.music != null && props.route.params.music != undefined){
+        //   if(await createFile(DEFAULT_DRAFT_FINAL_MUSIC_PATH, Buffer.from(props.route.params.music))){
+        //     musicPlayer = SoundPlayer.loadSoundFile(DEFAULT_DRAFT_FINAL_MUSIC_PATH);
+        //     musicPlayer.play();
+        //   }
+
+        // }
       }
 
       let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
@@ -81,7 +83,7 @@ function CameraScreen(props) {
   })
 
 
-  
+
 
 
 
@@ -101,18 +103,19 @@ function CameraScreen(props) {
 
     let val = parseFloat((1 / maxTime) * count).toFixed(2);
     // console.log(maxTime, count, val)
-    setProgress(val);
+    console.log("progress ",val)
+    setProgress(parseFloat(val));
 
     //console.log("stopped",camera.current.isStopped)
 
     if (count >= maxTime) {
       //console.log("time is up")
       //clearInterval(intervalRef.current)
-      const stopme = async () => {await camera.current.stopRecording()}
+      const stopme = async () => { await camera.current.stopRecording() }
       stopme();
       setRecordingStatus("STOP");
       setDisableRecorder(true);
-      
+
 
 
       // navigation.navigate('EditorScreen',{session:props.route.params.session})
@@ -147,8 +150,9 @@ function CameraScreen(props) {
       // setRecordingStatus("STOP");
       // setIsClicked(false);
       stopRecording();
-      
+
     } else {
+      setPlaying(true);
       // SoundPlayer.resume();
       setRecordingStatus("START");
       intervalRef.current = setInterval(onVideoRecord, 1000);
@@ -166,19 +170,19 @@ function CameraScreen(props) {
 
 
           var dur = 0;
-          console.log(dur,"START")
-          DraftData.videos.forEach((value)=>{
+          console.log(dur, "START")
+          DraftData.videos.forEach((value) => {
             dur += value.duration
-            console.log(dur);
+            //console.log(dur);
           })
-          
-          console.log(parseInt(dur),maxTime,parseInt(dur)>=maxTime)
+
+          console.log(parseInt(dur), maxTime, parseInt(dur) >= maxTime)
           await createFile(DEFAULT_DRAFT_FILE_PATH, JSON.stringify(DraftData));
-          
-          if(parseInt(dur)>=maxTime){
+
+          if (parseInt(dur) >= maxTime - 1) {
             mergeVideos();
           }
-          console.log("count inside : "+count);
+          console.log("count inside : " + count);
         },
         onRecordingError: (error) => console.error(error),
       });
@@ -187,6 +191,7 @@ function CameraScreen(props) {
 
   const stopRecording = async () => {
     // SoundPlayer.pause();
+    setPlaying(false)
     setRecordingStatus("STOP");
     setIsClicked(false);
     await camera.current.stopRecording()
@@ -198,14 +203,15 @@ function CameraScreen(props) {
 
 
   const mergeVideos = async () => {
+    isShowLoader(true);
     let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
     DraftData = JSON.parse(DraftData);
     let pVideoArray = DraftData.videos;
     let fileName = DEFAULT_DRAFT_FOLDER_PATH + "/ffmpeg_concat.txt";
-    var videoListBuilder = "";  
+    var videoListBuilder = "";
     for (var i = 0; i < pVideoArray.length; i++) {
       console.log(i, pVideoArray[i]);
-      videoListBuilder +="file "+ (pVideoArray[i].filename) + "\r\n"
+      videoListBuilder += "file " + (pVideoArray[i].filename) + "\r\n"
     }
 
     // console.log("videoListBuilder",videoListBuilder)
@@ -218,16 +224,25 @@ function CameraScreen(props) {
 
     const isMerged = VideoUtil.mergeVideo(fileName, DEFAULT_DRAFT_FINAL_VIDEO_PATH);
 
-    if(await isMerged){
-      navigation.navigate('EditorScreen',{session:props.route.params.session})
-    }else{
+    if (await isMerged) {
+      isShowLoader(false);
+      navigation.navigate('EditorScreen', { session: props.route.params.session })
+    } else {
+      isShowLoader(false);
       console.log("Merging failed")
     }
-
-
-
   }
 
+  const recalculateCount =(pVideoArray)=>{
+    pVideoArray = pVideoArray.splice(0, pVideoArray.length-1)
+    console.log("VA",pVideoArray)
+
+        var dur = 0;
+          pVideoArray.forEach((value) => {
+            dur += value.duration
+        })
+        setCount(parseInt(dur));
+  }
 
 
   if ((cameraPosition == 0 ? frontCamera : backCamera) == null) return <Text>Camera is not ready</Text>
@@ -237,6 +252,7 @@ function CameraScreen(props) {
       justifyContent: "center",
       alignItems: "center",
     }}>
+      {showLoader ? <Loader /> : <></>}
       <Camera
         ref={camera}
         style={StyleSheet.absoluteFill}
@@ -252,7 +268,7 @@ function CameraScreen(props) {
         videoStabilizationMode='auto'
         VideoFileType='mp4'
         CameraVideoCodec='h264'
-        fps={60}        
+        fps={60}
       />
 
 
@@ -272,8 +288,62 @@ function CameraScreen(props) {
         <View style={styles.cameraButtonOuterCircle}></View>
         <View style={!isClicked ? styles.cameraButtonStart : styles.cameraButtonStop}></View>
       </TouchableOpacity>
+      {
+        count > 0 ? <TouchableOpacity style={
+          {
+            position: 'absolute',
+            justifyContent: 'center',
+            width: 50,
+            height: 50,
+            alignItems: 'center',
+            bottom: 30,
+            right: 50
+          }
+        }
+          onPress={() => {
+            Alert.alert(
+              "Are your sure?",
+              "Few second are left of recording.",
+              [
+                {
+                  text: "No",
+                }, {
+                  text: "Yes",
+                  onPress: () => {
+                    mergeVideos();
+                  },
+                }
+              ]
+            );
+          }}
+
+
+        >
+          <Icons name='preview' />
+        </TouchableOpacity> : <></>
+
+
+
+      }
+
+
+      <TouchableOpacity style={
+        {
+          position: 'absolute',
+          justifyContent: 'center',
+          width: 50,
+          height: 50,
+          alignItems: 'center',
+          bottom: 30,
+          left: 50
+        }
+      }>
+        <Icons name='picker' />
+      </TouchableOpacity>
+
+
       <Progress.Bar
-        progress={progress}
+        progress={isNaN(progress)?0:progress}
         indeterminate={false}
         animated={true}
         useNativeDriver={true}
@@ -288,31 +358,76 @@ function CameraScreen(props) {
 
       <View style={styles.toolbox}>
         <View >
-          <TouchableOpacity onPress={() => {
-            setCameraPosition(cameraPosition == 0 ? 1 : 0)
-          }}>
-            <Icons name='flip' />
-          </TouchableOpacity>
+
+          {
+            count > 0 ? <></> :
+              <TouchableOpacity onPress={() => {
+                setCameraPosition(cameraPosition == 0 ? 1 : 0)
+              }}
+              >
+                <Icons name='flip' />
+              </TouchableOpacity>
+          }
           <TouchableOpacity onPress={() => {
             setFlash(flash == "on" ? "off" : "on");
           }}>
             <Icons name={flash == "on" ? "flash_off" : "flash_on"} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {
-            if (maxTime == 15) {
-              maxTime = 30;
-            } else {
-              maxTime = 15;
-            }
-            console.log(maxTime, "maxtime");
-          }}>
-            <Icons name='timer' />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={()=>{navigation.navigate('MusicPicker')}}>
-            <Icons name='music' />
-          </TouchableOpacity>
+
           {
-            count > 0 ? <TouchableOpacity>
+            count > 0 ? <></> :
+              <TouchableOpacity onPress={() => {
+                if (maxTime == 15) {
+                  maxTime = 30;
+                } else {
+                  maxTime = 15;
+                }
+                console.log(maxTime, "maxtime");
+              }}>
+                <Icons name='timer' />
+              </TouchableOpacity>
+
+          }
+
+          {
+            count > 0 ? <></> :
+
+              <TouchableOpacity onPress={() => { navigation.navigate('MusicPicker') }}>
+                <Icons name='music' />
+              </TouchableOpacity>
+          }
+          {
+            count > 0 ? <TouchableOpacity
+              onPress={()=>{
+
+                Alert.alert(
+                  "Are your sure?",
+                  "Do you really want to delete current clip ?",
+                  [
+                    {
+                      text: "No",
+                    }, {
+                      text: "Yes",
+                      onPress: async () => {
+                        let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
+                        DraftData = JSON.parse(DraftData);
+                        console.log(DraftData.videos.length);
+                        if(DraftData.videos.length > 0){
+                          var obj = DraftData.videos.pop();
+                          deleteFile(obj.path)
+                        }
+        
+                        recalculateCount(DraftData.videos);
+                        console.log(DraftData.videos.length);
+                      },
+                    }
+                  ]
+                );
+
+
+                
+              }}
+            >
               <Icons name='delete' />
             </TouchableOpacity>
               : <></>
@@ -321,6 +436,17 @@ function CameraScreen(props) {
         </View>
 
       </View>
+      <Video
+        // ref={ref}
+        style={{
+          display: 'none'
+        }}
+        source={{ uri: MusicURL }}
+        // repeat={true}
+        muted={false}
+        paused={!playing}
+      />
+
     </View>
 
   )
@@ -371,5 +497,8 @@ const styles = StyleSheet.create({
     borderRadius: 10
   }
 });
+
+
+
 
 export default CameraScreen;

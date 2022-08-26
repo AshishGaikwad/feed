@@ -7,7 +7,7 @@ import isFileExist, { createFile, readFile } from './file-service';
 export default class VideoUtil {
 
 
-    static async mergeVideo(fileName, pFinalPath) {
+    static async mergeVideo(fileName, pFinalPath,pAudio) {
         try {
             var videoCmdBuilder = "";
             videoCmdBuilder += "-y ";
