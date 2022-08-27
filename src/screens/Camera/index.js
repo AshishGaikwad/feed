@@ -19,6 +19,7 @@ import DocumentPicker, {
   isInProgress,
   types,
 } from 'react-native-document-picker'
+import { FFprobeKit } from 'ffmpeg-kit-react-native';
 
 
 function CameraScreen(props) {
@@ -350,6 +351,19 @@ function CameraScreen(props) {
             copyTo: 'cachesDirectory',
             type:types.video,
           })
+          console.log("pickerResult",pickerResult)
+          let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
+          DraftData = JSON.parse(DraftData);
+          let videoFileName = DEFAULT_DRAFT_VIDEO_PATH;
+          videoFileName = videoFileName.replace("{version}", 0);
+          await copyFile(pickerResult.fileCopyUri, videoFileName);
+          const info = await FFprobeKit.getMediaInformation(videoFileName);
+          console.log("info",info)
+          DraftData.videos = []
+          DraftData.videos.push({ filename: videoFileName, duration: 0 });
+          await createFile(DEFAULT_DRAFT_FILE_PATH, JSON.stringify(DraftData));
+          mergeVideos();
+
           // setResult([pickerResult])
         } catch (e) {
           handleError(e)

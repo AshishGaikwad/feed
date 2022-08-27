@@ -74,8 +74,6 @@ export default function App() {
           component={EditorScreen}
           options={{headerShown: false}}
         />
-
-
       </Stack.Navigator>
     </NavigationContainer>
   );
