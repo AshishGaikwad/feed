@@ -6001,6 +6001,13 @@
   "resolved" "https://registry.npmjs.org/react-native-date-picker/-/react-native-date-picker-4.2.2.tgz"
   "version" "4.2.2"
 
+"react-native-document-picker@^8.1.1":
+  "integrity" "sha512-mH0oghd7ndgU9/1meVJdqts1sAkOfUQW1qbrqTTsvR5f2K9r0BAj/X02dve5IBMOMZvlGd7qWrNVuIFg5AUXWg=="
+  "resolved" "https://registry.npmjs.org/react-native-document-picker/-/react-native-document-picker-8.1.1.tgz"
+  "version" "8.1.1"
+  dependencies:
+    "invariant" "^2.2.4"
+
 "react-native-elements@^3.4.2":
   "integrity" "sha512-m0eAWOn7JuR1wNTNY0WHuaqst4LI/gFE4N5Bbyfsc4DiryWsMST7aAg5w/Gos4IexWIzhLKCIkPxthND1m/8Xg=="
   "resolved" "https://registry.npmjs.org/react-native-elements/-/react-native-elements-3.4.2.tgz"

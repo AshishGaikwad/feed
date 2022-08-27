@@ -13,6 +13,12 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import VideoUtil from '../../services/video-service';
 import Video from 'react-native-video';
 import Loader from '../../components/Loader';
+import DocumentPicker, {
+  DirectoryPickerResponse,
+  DocumentPickerResponse,
+  isInProgress,
+  types,
+} from 'react-native-document-picker'
 
 
 function CameraScreen(props) {
@@ -31,7 +37,7 @@ function CameraScreen(props) {
   const frontCamera = devices.front;
   const backCamera = devices.back;
   const [isClicked, setIsClicked] = useState(false);
-  var maxTime = 15;
+  const [maxTime, setMaxTime] = useState(15);
   const [progress, setProgress] = useState(0.0)
   const [recordingStatus, setRecordingStatus] = useState("STOP");
   const [cameraPosition, setCameraPosition] = useState(0);
@@ -103,7 +109,7 @@ function CameraScreen(props) {
 
     let val = parseFloat((1 / maxTime) * count).toFixed(2);
     // console.log(maxTime, count, val)
-    console.log("progress ",val)
+    console.log("progress ", val)
     setProgress(parseFloat(val));
 
     //console.log("stopped",camera.current.isStopped)
@@ -233,15 +239,14 @@ function CameraScreen(props) {
     }
   }
 
-  const recalculateCount =(pVideoArray)=>{
-    pVideoArray = pVideoArray.splice(0, pVideoArray.length-1)
-    console.log("VA",pVideoArray)
+  const recalculateCount = (pVideoArray) => {
+    console.log("VA", pVideoArray)
 
-        var dur = 0;
-          pVideoArray.forEach((value) => {
-            dur += value.duration
-        })
-        setCount(parseInt(dur));
+    var dur = 0;
+    pVideoArray.forEach((value) => {
+      dur += value.duration
+    })
+    setCount(parseInt(dur));
   }
 
 
@@ -337,13 +342,26 @@ function CameraScreen(props) {
           bottom: 30,
           left: 50
         }
-      }>
+      }
+      onPress={async ()=>{
+        try {
+          const pickerResult = await DocumentPicker.pickSingle({
+            presentationStyle: 'fullScreen',
+            copyTo: 'cachesDirectory',
+            type:types.video,
+          })
+          // setResult([pickerResult])
+        } catch (e) {
+          handleError(e)
+        }
+      }}
+      >
         <Icons name='picker' />
       </TouchableOpacity>
 
 
       <Progress.Bar
-        progress={isNaN(progress)?0:progress}
+        progress={isNaN(progress) ? 0 : progress}
         indeterminate={false}
         animated={true}
         useNativeDriver={true}
@@ -353,7 +371,15 @@ function CameraScreen(props) {
         width={Dimensions.get('window').width}
         height={4}
         style={styles.progressBar} />
-      <Text style={{ fontSize: 30 }}>{count}</Text>
+
+
+
+      <Text style={{
+         fontSize: 18,
+         position:'absolute',
+         top:20
+         
+      }}>{count} / {maxTime}</Text>
 
 
       <View style={styles.toolbox}>
@@ -378,9 +404,9 @@ function CameraScreen(props) {
             count > 0 ? <></> :
               <TouchableOpacity onPress={() => {
                 if (maxTime == 15) {
-                  maxTime = 30;
+                  setMaxTime(30);
                 } else {
-                  maxTime = 15;
+                  setMaxTime(15);
                 }
                 console.log(maxTime, "maxtime");
               }}>
@@ -398,7 +424,7 @@ function CameraScreen(props) {
           }
           {
             count > 0 ? <TouchableOpacity
-              onPress={()=>{
+              onPress={() => {
 
                 Alert.alert(
                   "Are your sure?",
@@ -412,11 +438,12 @@ function CameraScreen(props) {
                         let DraftData = await readFile(DEFAULT_DRAFT_FILE_PATH);
                         DraftData = JSON.parse(DraftData);
                         console.log(DraftData.videos.length);
-                        if(DraftData.videos.length > 0){
+                        if (DraftData.videos.length > 0) {
                           var obj = DraftData.videos.pop();
                           deleteFile(obj.path)
                         }
-        
+                        await createFile(DEFAULT_DRAFT_FILE_PATH, JSON.stringify(DraftData));
+
                         recalculateCount(DraftData.videos);
                         console.log(DraftData.videos.length);
                       },
@@ -425,7 +452,7 @@ function CameraScreen(props) {
                 );
 
 
-                
+
               }}
             >
               <Icons name='delete' />

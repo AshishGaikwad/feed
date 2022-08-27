@@ -14,7 +14,7 @@ function EditorScreen(props) {
   const DEFAULT_DRAFT_FILE_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_' + props.route.params.session + "__.json";
   const DEFAULT_DRAFT_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__{version}.mp4";
   const DEFAULT_DRAFT_FINAL_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__final.mp4";
-  // const DEFAULT_DRAFT_CACHED_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__cached.mp4";
+  const DEFAULT_DRAFT_CACHED_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__cached.mp4";
   const navigation = useNavigation();
 
   // VESDK.unlockWithLicense(require('./vesdk_license'));
@@ -33,7 +33,7 @@ function EditorScreen(props) {
       backgroundColor: 'rgba(0,0,0,1)'
 
     }}>
-      {/* <Video
+      <Video
           ref={ref}
           style={{
             position:'absolute',
@@ -43,7 +43,7 @@ function EditorScreen(props) {
             bottom:150,
             backgroundColor:'rgba(0,0,0,1)'
           }}
-          source={{uri: DEFAULT_DRAFT_CACHED_VIDEO_PATH}}
+          source={{uri: DEFAULT_DRAFT_FINAL_VIDEO_PATH  }}
           repeat={false}
           resizeMode={'contain'}
           muted={false}
@@ -84,7 +84,7 @@ function EditorScreen(props) {
           </Slider>
           
 
-        </View> */}
+        </View>
       {/* <VideoEditorModal 
         visible={true} 
         video={DEFAULT_DRAFT_FINAL_VIDEO_PATH} 
