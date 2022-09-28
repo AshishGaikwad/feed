@@ -6,6 +6,7 @@ import Icons from '../../components/Icons';
 import { Slider } from 'react-native-elements/dist/slider/Slider';
 // import { VESDK, VideoEditorModal, Configuration } from 'react-native-videoeditorsdk';
 import { useNavigation } from '@react-navigation/native';
+import Trimmer from '../../components/Trimmer';
 
 function EditorScreen(props) {
 
@@ -16,6 +17,13 @@ function EditorScreen(props) {
   const DEFAULT_DRAFT_FINAL_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__final.mp4";
   const DEFAULT_DRAFT_CACHED_VIDEO_PATH = DEFAULT_DRAFT_FOLDER_PATH + '/DRAFT_VID_' + props.route.params.session + "__cached.mp4";
   const navigation = useNavigation();
+
+  const maxTrimDuration = 60000;
+  const minimumTrimDuration = 1000;
+  const totalDuration = 180000
+  const initialLeftHandlePosition = 0;
+  const initialRightHandlePosition = 36000;
+  const scrubInterval = 50;
 
   // VESDK.unlockWithLicense(require('./vesdk_license'));
 
@@ -33,58 +41,67 @@ function EditorScreen(props) {
       backgroundColor: 'rgba(0,0,0,1)'
 
     }}>
-      <Video
-          ref={ref}
-          style={{
-            position:'absolute',
-            top:20,
-            left:20,
-            right:20,
-            bottom:150,
-            backgroundColor:'rgba(0,0,0,1)'
-          }}
-          source={{uri: DEFAULT_DRAFT_FINAL_VIDEO_PATH  }}
-          repeat={false}
-          resizeMode={'contain'}
-          muted={false}
-          controls={true}
-        />
 
-        <View
-          style={{
-            position:'absolute',
-            backgroundColor:'#000',
-            height:50,
-            bottom:0,
-            left:0,
-            right:0
+      <Trimmer
+        onHandleChange={this.onHandleChange}
+        totalDuration={totalDuration}
+        trimmerLeftHandlePosition={trimmerLeftHandlePosition}
+        trimmerRightHandlePosition={trimmerRightHandlePosition}
+        minimumTrimDuration={minimumTrimDuration}
+        maxTrimDuration={maxTrimDuration}
+      />
+      {/* <Video
+        ref={ref}
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          right: 20,
+          bottom: 150,
+          backgroundColor: 'rgba(0,0,0,1)'
+        }}
+        source={{ uri: DEFAULT_DRAFT_FINAL_VIDEO_PATH }}
+        repeat={false}
+        // resizeMode={'contain'}
+        muted={false}
+        controls={true}
+      /> */}
+
+      <View
+        style={{
+          position: 'absolute',
+          backgroundColor: '#000',
+          height: 50,
+          bottom: 0,
+          left: 0,
+          right: 0
+        }}
+      >
+        <TouchableOpacity onPress={() => { navigation.navigate('MusicPicker') }}>
+          <Icons name='music' />
+        </TouchableOpacity>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          backgroundColor: '#eee',
+          height: 50,
+          bottom: 50,
+          left: 0,
+          right: 0
+        }}
+      >
+        <Slider
+          onValueChange={(value) => {
+            console.log(value, "asas")
           }}
         >
-      <TouchableOpacity onPress={()=>{navigation.navigate('MusicPicker')}}>
-                  <Icons name='music' />
-       </TouchableOpacity>
-        </View>
 
-        <View
-          style={{
-            position:'absolute',
-            backgroundColor:'#eee',
-            height:50,
-            bottom:50,
-            left:0,
-            right:0
-          }}
-        >
-          <Slider
-          onValueChange={(value)=>{
-            console.log(value,"asas")
-          }}
-          >
+        </Slider>
 
-          </Slider>
-          
 
-        </View>
+      </View>
       {/* <VideoEditorModal 
         visible={true} 
         video={DEFAULT_DRAFT_FINAL_VIDEO_PATH} 

@@ -4,6 +4,8 @@ import Post from '../../components/Post';
 
 
 function HomeScreen() {
+
+  console.log("In hs")
   const [height, setHeight] = useState(0);
   const mediaRefs = useRef([]);
   const [progressBar, setProgressBar] = useState(0);
